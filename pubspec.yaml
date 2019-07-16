@@ -1,6 +1,6 @@
 name: rx_flutter_plugin
 description: A flutter plugin to bridge RxJava &amp; RxSwift to Dart streams.
-version: 0.0.1
+version: 0.0.2
 author: tenko <keithle888@gmail.com>
 homepage: https://github.com/keithle888/rx_flutter_plugin
 
@@ -26,7 +26,7 @@ flutter:
   # adding or updating assets for this project.
   plugin:
     androidPackage: tenko.rx_flutter_plugin
-    pluginClass: RxFlutterPlugin
+#    pluginClass: RxFlutterPlugin
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:
