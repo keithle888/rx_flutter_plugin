@@ -1,6 +1,6 @@
 # RxFlutterPlugin
 
-A flutter plugin to bridge RxJava &amp; RxSwift to Dart streams.
+A flutter plugin to bridge RxJava &amp; RxSwift to Dart [streams](https://dart.dev/tutorials/language/streams).
 
 ## Getting Started
 
