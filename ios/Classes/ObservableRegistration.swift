@@ -40,7 +40,7 @@ struct ObservableRegistrationResponse {
     let errorCode: Int
     let errorMessage: String?
     
-    func toDictionary() -> [String: Any] {
+    func toDictionary() -> [String: Any?] {
         return [
             Field.ERROR_CODE.rawValue: errorCode,
             Field.ERROR_MESSAGE.rawValue: errorMessage

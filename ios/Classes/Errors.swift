@@ -1,11 +1,11 @@
 enum PluginError: Error {
     case InvalidObservableType(String?)
-    case ObservableState
-    case ObservableNotAvailable
+    case ObservableState(String?)
+    case ObservableNotAvailable(String?)
     case ObservableThrown
     
-    func getErrorCode() -> Int {
-        switch self {
+    static func getErrorCode(_ error: PluginError) -> Int {
+        switch error {
         case .InvalidObservableType:
             return 1
         case .ObservableState:

@@ -33,19 +33,19 @@ struct ObservableSourceHolder<T> {
     }
     
     func getSourceAsObservable(
-        args: T?
+        _ args: T?
         ) -> Observable<Any> {
         return sourceGenerator(args) as! Observable<Any>
     }
     
     func getSourceAsSingle(
-        args: T?
+        _ args: T?
         ) -> PrimitiveSequence<SingleTrait, Any> {
         return sourceGenerator(args) as! PrimitiveSequence<SingleTrait, Any>
     }
     
     func getSourceAsCompletable(
-        args: T?
+        _ args: T?
         ) -> PrimitiveSequence<CompletableTrait, Never> {
         return sourceGenerator(args) as! PrimitiveSequence<CompletableTrait, Never>
     }
