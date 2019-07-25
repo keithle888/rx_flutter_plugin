@@ -5,9 +5,9 @@ public class RxFlutterPluginMethodChannel {
     let methodChannel: FlutterMethodChannel
     
     var cachedDisposables: [Int: Disposable] = [:]
-    var storedObservables: [String: ObservableSourceHolder<Any>] = [:]
+    var storedObservables: [String: ObservableSourceHolder] = [:]
     
-    init(
+    public init(
         _ channelName: String,
         _ binaryMessenger: FlutterBinaryMessenger
         ) {
@@ -105,16 +105,64 @@ public class RxFlutterPluginMethodChannel {
         }
     }
     
+    public func addObservable(
+        _ method: String,
+        _ sourceGen: @escaping (Any?) throws -> Observable<Any>,
+        _ errorHandler: ((Error) -> Any?)?
+        ) {
+        let existingObservable = storedObservables.removeValue(forKey: method)
+        if existingObservable != nil {
+            RxFlutterPluginLogger.w("Removing existing observable source for method: \(method)")
+        }
+        storedObservables[method] = ObservableSourceHolderImpl(
+            observable: sourceGen,
+            errorHandler
+            )
+        RxFlutterPluginLogger.d("Added observable source for method: \(method)")
+    }
+    
+    public func addSingle(
+        _ method: String,
+        _ sourceGen: @escaping (Any?) throws -> PrimitiveSequence<SingleTrait, Any>,
+        _ errorHandler: ((Error) -> Any?)?
+        ) {
+        let existingObservable = storedObservables.removeValue(forKey: method)
+        if existingObservable != nil {
+            RxFlutterPluginLogger.w("Removing existing single source for method: \(method)")
+        }
+        storedObservables[method] = ObservableSourceHolderImpl(
+            single: sourceGen,
+            errorHandler
+            )
+        RxFlutterPluginLogger.d("Added single source for method: \(method)")
+    }
+    
+    public func addCompletable(
+        _ method: String,
+        _ sourceGen: @escaping (Any?) throws -> PrimitiveSequence<CompletableTrait, Never>,
+        _ errorHandler: ((Error) -> Any?)?
+        ) {
+        let existingObservable = storedObservables.removeValue(forKey: method)
+        if existingObservable != nil {
+            RxFlutterPluginLogger.w("Removing existing completable source for method: \(method)")
+        }
+        storedObservables[method] = ObservableSourceHolderImpl(
+            completable: sourceGen,
+            errorHandler
+            )
+        RxFlutterPluginLogger.d("Added completable source for method: \(method)")
+    }
+    
     private func subscribeToSource(
         requestId: Int,
-        source: ObservableSourceHolder<Any>,
+        source: ObservableSourceHolder,
         arguments: Any?
         )
     {
         switch source.type {
         case StreamType.OBSERVABLE:
             cachedDisposables[requestId] = Observable.deferred {
-                return source.getSourceAsObservable(arguments)
+                return try source.getSourceAsObservable(arguments)
                 }
                 .subscribe(
                     onNext: { element in
@@ -153,7 +201,7 @@ public class RxFlutterPluginMethodChannel {
             )
         case StreamType.SINGLE:
             cachedDisposables[requestId] = Single.deferred {
-                return source.getSourceAsSingle(arguments)
+                return try source.getSourceAsSingle(arguments)
                 }
                 .subscribe(
                     onSuccess: { element in
@@ -189,7 +237,7 @@ public class RxFlutterPluginMethodChannel {
             )
         case StreamType.COMPLETABLE:
             cachedDisposables[requestId] = Completable.deferred {
-                return source.getSourceAsCompletable(arguments)
+                return try source.getSourceAsCompletable(arguments)
                 }
                 .subscribe(
                     onCompleted: {
@@ -224,10 +272,10 @@ public class RxFlutterPluginMethodChannel {
             self.methodChannel.invokeMethod(
                 "callback",
                 arguments: NSDictionary(dictionary: [
-                    Field.OBSERVABLE_CALLBACK: observableCallback.callbackType.rawValue,
-                    Field.PAYLOAD: observableCallback.payload,
-                    Field.REQUEST_ID: observableCallback.requestId,
-                    Field.ERROR_MESSAGE: observableCallback.errorMessage
+                    Field.OBSERVABLE_CALLBACK.rawValue: observableCallback.callbackType.rawValue,
+                    Field.PAYLOAD.rawValue: observableCallback.payload,
+                    Field.REQUEST_ID.rawValue: observableCallback.requestId,
+                    Field.ERROR_MESSAGE.rawValue: observableCallback.errorMessage
                 ])
             )
         }

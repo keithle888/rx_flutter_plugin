@@ -1,12 +1,30 @@
 import RxSwift
 
-struct ObservableSourceHolder<T> {
-    let type: StreamType
-    let sourceGenerator: (T?) -> Any
-    let errorHandler: ((Error) -> Any?)?
+protocol ObservableSourceHolder {
+    var type: StreamType {get set}
+    var sourceGenerator: (Any?) throws -> Any {get set}
+    var errorHandler: ((Error) -> Any?)? {get set}
+    
+    func getSourceAsObservable(
+        _ args: Any?
+        ) throws -> Observable<Any>
+    
+    func getSourceAsSingle(
+        _ args: Any?
+        ) throws -> PrimitiveSequence<SingleTrait, Any>
+    
+    func getSourceAsCompletable(
+        _ args: Any?
+        ) throws -> PrimitiveSequence<CompletableTrait, Never>
+}
+
+class ObservableSourceHolderImpl: ObservableSourceHolder {
+    var type: StreamType
+    var sourceGenerator: (Any?) throws -> Any
+    var errorHandler: ((Error) -> Any?)?
     
     init(
-        observable: @escaping (T?) -> Any,
+        observable: @escaping (Any?) throws -> Any,
         _ errorHandler: ((Error) -> Any?)? = nil
         ) {
         self.type = StreamType.OBSERVABLE
@@ -15,7 +33,7 @@ struct ObservableSourceHolder<T> {
     }
     
     init(
-        single: @escaping (T?) -> Any,
+        single: @escaping (Any?) throws -> Any,
         _ errorHandler: ((Error) -> Any?)? = nil
         ) {
         self.type = StreamType.SINGLE
@@ -24,7 +42,7 @@ struct ObservableSourceHolder<T> {
     }
     
     init(
-        completable: @escaping (T?) -> Any,
+        completable: @escaping (Any?) throws -> Any,
         _ errorHandler: ((Error) -> Any?)? = nil
         ) {
         self.type = StreamType.COMPLETABLE
@@ -33,20 +51,20 @@ struct ObservableSourceHolder<T> {
     }
     
     func getSourceAsObservable(
-        _ args: T?
-        ) -> Observable<Any> {
-        return sourceGenerator(args) as! Observable<Any>
+        _ args: Any?
+        ) throws -> Observable<Any> {
+        return try sourceGenerator(args) as! Observable<Any>
     }
     
     func getSourceAsSingle(
-        _ args: T?
-        ) -> PrimitiveSequence<SingleTrait, Any> {
-        return sourceGenerator(args) as! PrimitiveSequence<SingleTrait, Any>
+        _ args: Any?
+        ) throws -> PrimitiveSequence<SingleTrait, Any> {
+        return try sourceGenerator(args) as! PrimitiveSequence<SingleTrait, Any>
     }
     
     func getSourceAsCompletable(
-        _ args: T?
-        ) -> PrimitiveSequence<CompletableTrait, Never> {
-        return sourceGenerator(args) as! PrimitiveSequence<CompletableTrait, Never>
+        _ args: Any?
+        ) throws -> PrimitiveSequence<CompletableTrait, Never> {
+        return try sourceGenerator(args) as! PrimitiveSequence<CompletableTrait, Never>
     }
 }
