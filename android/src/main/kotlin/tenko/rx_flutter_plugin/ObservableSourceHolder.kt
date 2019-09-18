@@ -7,7 +7,7 @@ import io.reactivex.SingleSource
 class ObservableSourceHolder<T> {
     internal lateinit var type: StreamType
     internal lateinit var sourceGenerator: (args: T?) -> Any
-    internal var errorHandler: ((Throwable?) -> Any?)? = null
+    internal var errorHandler: ((Throwable) -> Any?)? = null
 
     //Not in use atm.
 //    class Builder<T> {
@@ -19,7 +19,7 @@ class ObservableSourceHolder<T> {
 //    }
 
     companion object {
-        fun <T> observableHolder(observable: (arguments: T?) -> ObservableSource<*>, errorHandler: ((Throwable?) -> Any?)? = null): ObservableSourceHolder<T> {
+        fun <T> observableHolder(observable: (arguments: T?) -> ObservableSource<*>, errorHandler: ((Throwable) -> Any?)? = null): ObservableSourceHolder<T> {
             val holder =  ObservableSourceHolder<T>()
             holder.type = StreamType.observable
             holder.sourceGenerator = observable
@@ -27,7 +27,7 @@ class ObservableSourceHolder<T> {
             return holder
         }
 
-        fun <T> singleHolder(observable: (arguments: T?) -> SingleSource<*>, errorHandler: ((Throwable?) -> Any?)? = null): ObservableSourceHolder<T> {
+        fun <T> singleHolder(observable: (arguments: T?) -> SingleSource<*>, errorHandler: ((Throwable) -> Any?)? = null): ObservableSourceHolder<T> {
             val holder =  ObservableSourceHolder<T>()
             holder.type = StreamType.single
             holder.sourceGenerator = observable
@@ -35,7 +35,7 @@ class ObservableSourceHolder<T> {
             return holder
         }
 
-        fun <T> completableHolder(observable: (arguments: T?) -> CompletableSource, errorHandler: ((Throwable?) -> Any?)? = null): ObservableSourceHolder<T> {
+        fun <T> completableHolder(observable: (arguments: T?) -> CompletableSource, errorHandler: ((Throwable) -> Any?)? = null): ObservableSourceHolder<T> {
             val holder =  ObservableSourceHolder<T>()
             holder.type = StreamType.completable
             holder.sourceGenerator = observable

@@ -106,7 +106,7 @@ class RxFlutterMethodChannel(val channelName: String, binaryMessenger: BinaryMes
             errorHandler: ((Throwable) -> Any?)? = null
     ) {
         Logger.d("Observable source registered. methodName: $methodName")
-        storedObservables[methodName] = ObservableSourceHolder.observableHolder(source)
+        storedObservables[methodName] = ObservableSourceHolder.observableHolder(source, errorHandler)
     }
 
     fun <T> addSingle(
@@ -115,7 +115,7 @@ class RxFlutterMethodChannel(val channelName: String, binaryMessenger: BinaryMes
             errorHandler: ((Throwable) -> Any?)? = null
     ) {
         Logger.d("Single source registered. methodName: $methodName")
-        storedObservables[methodName] = ObservableSourceHolder.singleHolder(source)
+        storedObservables[methodName] = ObservableSourceHolder.singleHolder(source, errorHandler)
     }
 
     fun <T> addCompletable(
@@ -124,7 +124,7 @@ class RxFlutterMethodChannel(val channelName: String, binaryMessenger: BinaryMes
             errorHandler: ((Throwable) -> Any?)? = null
     ) {
         Logger.d("Completable source registered. methodName: $methodName")
-        storedObservables[methodName] = ObservableSourceHolder.completableHolder(source)
+        storedObservables[methodName] = ObservableSourceHolder.completableHolder(source, errorHandler)
     }
 
     private val mainThreadHandler = Handler(Looper.getMainLooper())
@@ -166,11 +166,19 @@ class RxFlutterMethodChannel(val channelName: String, binaryMessenger: BinaryMes
                             )
                         }, {
                             Logger.w(it, "onError() = requestId: $requestId")
+
+                            val payload =
+                                    when {
+                                        source.errorHandler != null -> source.errorHandler?.invoke(it)
+                                        defaultExceptionHandler != null -> defaultExceptionHandler?.handleException(it)
+                                        else -> null
+                                    }
+
                             sendObservableCallback(
                                     ObservableCallback(
                                             ObservableCallbackType.onError,
                                             requestId,
-                                            source.errorHandler?.invoke(it),
+                                            payload,
                                             it.localizedMessage
                                     )
                             )
@@ -213,11 +221,19 @@ class RxFlutterMethodChannel(val channelName: String, binaryMessenger: BinaryMes
                             cachedDisposables.remove(requestId)
                         }, {
                             Logger.w(it, "onError() = requestId: $requestId")
+
+                            val payload =
+                                    when {
+                                        source.errorHandler != null -> source.errorHandler?.invoke(it)
+                                        defaultExceptionHandler != null -> defaultExceptionHandler?.handleException(it)
+                                        else -> null
+                                    }
+
                             sendObservableCallback(
                                     ObservableCallback(
                                             ObservableCallbackType.onError,
                                             requestId,
-                                            source.errorHandler?.invoke(it),
+                                            payload,
                                             it.localizedMessage
                                     )
                             )
@@ -241,11 +257,19 @@ class RxFlutterMethodChannel(val channelName: String, binaryMessenger: BinaryMes
                             cachedDisposables.remove(requestId)
                         }, {
                             Logger.w(it, "onError() = requestId: $requestId")
+
+                            val payload =
+                                    when {
+                                        source.errorHandler != null -> source.errorHandler?.invoke(it)
+                                        defaultExceptionHandler != null -> defaultExceptionHandler?.handleException(it)
+                                        else -> null
+                                    }
+
                             sendObservableCallback(
                                     ObservableCallback(
                                             ObservableCallbackType.onError,
                                             requestId,
-                                            source.errorHandler?.invoke(it),
+                                            payload,
                                             it.localizedMessage
                                     )
                             )
@@ -253,5 +277,15 @@ class RxFlutterMethodChannel(val channelName: String, binaryMessenger: BinaryMes
                         })
                     }
                 }
+    }
+
+    private var defaultExceptionHandler: ExceptionHandler? = null
+
+    /**
+     * Set the default ExceptionHandler to be used when an Rx subscription throws.
+     * If null is returned by the given ExceptionHandler, the default behaviour is used (ObservableThrownException).
+     */
+    fun setDefaultExceptionHandler(exceptionHandler: ExceptionHandler) {
+        defaultExceptionHandler = exceptionHandler
     }
 }

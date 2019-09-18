@@ -178,11 +178,19 @@ public class RxFlutterPluginMethodChannel {
                 },
                     onError: { error in
                         RxFlutterPluginLogger.d("onError = requestId: \(requestId), error: \(error)")
+                        
+                        var payload: Any? = nil
+                        if (source.errorHandler != nil) {
+                            payload = source.errorHandler?(error)
+                        } else if (self.defaultErrorHandler != nil) {
+                            payload = self.defaultErrorHandler?.handleError(error: error)
+                        }
+                        
                         self.sendObservableCallback(
                             ObservableCallback(
                                 callbackType: ObservableCallback.CallbackType.ON_ERROR,
                                 requestId: requestId,
-                                payload: source.errorHandler?(error),
+                                payload: payload,
                                 errorMessage: error.localizedDescription
                             )
                         )
@@ -225,11 +233,19 @@ public class RxFlutterPluginMethodChannel {
                 },
                     onError: { error in
                         RxFlutterPluginLogger.d("onError = requestId: \(requestId), error: \(error)")
+                        
+                        var payload: Any? = nil
+                        if (source.errorHandler != nil) {
+                            payload = source.errorHandler?(error)
+                        } else if (self.defaultErrorHandler != nil) {
+                            payload = self.defaultErrorHandler?.handleError(error: error)
+                        }
+                        
                         self.sendObservableCallback(
                             ObservableCallback(
                                 callbackType: ObservableCallback.CallbackType.ON_ERROR,
                                 requestId: requestId,
-                                payload: source.errorHandler?(error),
+                                payload: payload,
                                 errorMessage: error.localizedDescription
                             )
                         )
@@ -253,11 +269,19 @@ public class RxFlutterPluginMethodChannel {
                 },
                     onError: { error in
                         RxFlutterPluginLogger.d("onError = requestId: \(requestId), error: \(error)")
+                        
+                        var payload: Any? = nil
+                        if (source.errorHandler != nil) {
+                            payload = source.errorHandler?(error)
+                        } else if (self.defaultErrorHandler != nil) {
+                            payload = self.defaultErrorHandler?.handleError(error: error)
+                        }
+                        
                         self.sendObservableCallback(
                             ObservableCallback(
                                 callbackType: ObservableCallback.CallbackType.ON_ERROR,
                                 requestId: requestId,
-                                payload: source.errorHandler?(error),
+                                payload: payload,
                                 errorMessage: error.localizedDescription
                             )
                         )
@@ -279,5 +303,14 @@ public class RxFlutterPluginMethodChannel {
                 ])
             )
         }
+    }
+    
+    private var defaultErrorHandler: ErrorHandler? = nil
+    
+    /**
+    Set default error handler. If an error handler is provided with the observable will take priority.
+    */
+    private func setDefaultErrorHandler(errorHandler: ErrorHandler) {
+        self.defaultErrorHandler = errorHandler
     }
 }
