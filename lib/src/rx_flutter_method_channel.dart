@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:rx_flutter_plugin/rx_flutter_plugin.dart';
 import 'stream_type.dart';
 import 'exceptions.dart';
 import 'dart:async';
@@ -8,6 +9,7 @@ import 'observable_registration.dart';
 import 'observable_callback.dart';
 import 'observable_stream_controller.dart';
 import 'logger.dart';
+
 final _log = RxPluginLogger("RxFlutterMethodChannel");
 
 ///A helper class from easily binding ReactiveX observable types on the native platforms to the dart streams.
@@ -20,15 +22,16 @@ class RxFlutterMethodChannel {
       String channelName,
       ) {
     this._channel = MethodChannel(channelName);
-    _channel.setMethodCallHandler(methodChannelCallback);
+    _channel.setMethodCallHandler(_methodChannelCallback);
   }
 
+  /// For debugging responses from native.
   void setMockMethodCallHandler(Future<dynamic> handler(MethodCall call)) {
     _channel.setMockMethodCallHandler(handler);
   }
 
-  ///Always return null.
-  Future<dynamic> methodChannelCallback(MethodCall call) {
+  /// Always return null.
+  Future<dynamic> _methodChannelCallback(MethodCall call) {
     _log.d("onMethodCall: ${call.method}, arguments: ${call.arguments}");
     final args = call.arguments as Map;
     //Cast to ObservableCallback
@@ -54,11 +57,10 @@ class RxFlutterMethodChannel {
         streamController.close();
         break;
       case ObservableCallbackType.onError:
+        Exception exceptionToThrow = _defaultExceptionHandler?.onError(callback.payload) ??
+            ObservableThrownException(callback.errorMessage, callback.payload);
         streamController.addError(
-          new ObservableThrownException(
-            callback.errorMessage,
-            callback.payload
-          )
+            exceptionToThrow
         );
         streamController.close();
         break;
@@ -66,50 +68,50 @@ class RxFlutterMethodChannel {
     return null;
   }
   
-  ///Calling pause/resume will not work on these streams.
+  /// Calling pause/resume will not work on these streams.
   Stream<dynamic> getObservable(
       String method,
       [dynamic arguments]
       ) {
     final requestId = Utils.generateRandomInt();
-    final streamController = createSteamController(method, requestId, arguments, StreamType.observable);
+    final streamController = _createSteamController(method, requestId, arguments, StreamType.observable);
     return streamController.stream();
   }
 
-  ///Calling pause/resume will not work on these streams.
-  ///onData will be called once followed by onDone.
+  /// Calling pause/resume will not work on these streams.
+  /// onData will be called once followed by onDone.
   Stream<dynamic> getSingle(
       String method,
       [dynamic arguments]
       ) {
     final requestId = Utils.generateRandomInt();
-    final streamController = createSteamController(method, requestId, arguments, StreamType.single);
+    final streamController = _createSteamController(method, requestId, arguments, StreamType.single);
     return streamController.stream();
   }
 
-  ///Calling pause/resume will not work on these streams.
-  ///Only either onDone will be called or onError follow by onDone.
+  /// Calling pause/resume will not work on these streams.
+  /// Only either onDone will be called or onError follow by onDone.
   Stream<void> getCompletable(
       String method,
       [dynamic arguments]
       ) {
     final requestId = Utils.generateRandomInt();
-    final streamController = createSteamController(method, requestId, arguments, StreamType.completable);
+    final streamController = _createSteamController(method, requestId, arguments, StreamType.completable);
     return streamController.stream();
   }
 
-  ///Try not to use this function, instead
-  Future<void> registerObservable(ObservableRegistrationRequest request) async {
+  ///
+  Future<void> _subscribeToObservable(ObservableRegistrationRequest request) async {
     final response = await request.invokeObservableRegistration(_channel);
     if (response.errorCode != 0) {
       throw RxFlutterPluginExceptionHandler.getException(response.errorCode, response.errorMessage);
     }
   }
 
-  ///Used to hold stream controllers for callbacks from the observables on the native side.
+  /// Used to hold stream controllers for callbacks from the observables on the native side.
   static final Map<int, ObservableStreamController<dynamic>> cachedStreams = {};
   
-  ObservableStreamController<dynamic> createSteamController(
+  ObservableStreamController<dynamic> _createSteamController(
       String method,
       int requestId,
       dynamic arguments,
@@ -120,7 +122,7 @@ class RxFlutterMethodChannel {
         streamType,
         onListen: () async {
           //Send observable registration
-          final _ = await registerObservable(
+          final _ = await _subscribeToObservable(
               ObservableRegistrationRequest(
                 method,
                 streamType,
@@ -132,10 +134,10 @@ class RxFlutterMethodChannel {
         },
         onCancel: () async {
           //Remove StreamController from cachedStreams
-          removeStreamController(requestId);
+          _removeStreamController(requestId);
 
           //Dispose of observable
-          final _ = await registerObservable(
+          final _ = await _subscribeToObservable(
               ObservableRegistrationRequest(
                 method,
                 streamType,
@@ -147,15 +149,14 @@ class RxFlutterMethodChannel {
         }
     );
 
-    //Store StreamController in cachedStreams first.
+    // Store StreamController in cachedStreams first.
     cachedStreams[requestId] = streamController;
     
     return streamController;
   }
 
-  //TODO::Create tests for 1) incorrect onNext for completable, 2) checking for disposing, 3) oncorrect callback sequence
-  
-  void removeStreamController(int requestId) {
+
+  void _removeStreamController(int requestId) {
     if (!cachedStreams.containsKey(requestId)) {
       _log.w("Stream controller to be removed from cachedStreams was not found. Unexpected state.");
     } else {
@@ -164,10 +165,17 @@ class RxFlutterMethodChannel {
   }
 
 
-  ///Clears all pending resources
+  /// Clears all existing observable subscriptions
   void close() {
     cachedStreams.forEach((key, controller) {
       controller.close();
     });
+  }
+
+  ExceptionHandler _defaultExceptionHandler = null;
+
+  /// Default error handler when an ObservableThrownException is thrown from native.
+  void setDefaultExceptionHandler(ExceptionHandler exceptionHandler) {
+    _defaultExceptionHandler = exceptionHandler;
   }
 }

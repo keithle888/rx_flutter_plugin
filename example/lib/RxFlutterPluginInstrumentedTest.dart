@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:rx_flutter_plugin/rx_flutter_method_channel.dart';
-import 'dart:io';
-import 'dart:async';
+import 'package:rx_flutter_plugin/src/rx_flutter_method_channel.dart';
+//import 'dart:io';
+//import 'dart:async';
 
 void main() async {
 

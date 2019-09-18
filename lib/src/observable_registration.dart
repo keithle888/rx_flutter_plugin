@@ -2,7 +2,6 @@ import 'stream_type.dart';
 import 'observable_action.dart';
 import 'package:flutter/services.dart';
 import 'field_names.dart';
-import 'exceptions.dart';
 import 'logger.dart';
 
 final _log = RxPluginLogger("ObservableRegistration");
