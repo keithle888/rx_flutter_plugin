@@ -1,3 +1,3 @@
-## 0.0.1
+## 1.0.0
 
-* TODO: Describe initial release.
+* Added ErrorHandler to map payloads returned from native Rx subscriptions throwing an error to Dart exceptions.
