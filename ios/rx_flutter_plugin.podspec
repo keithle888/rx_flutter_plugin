@@ -15,7 +15,7 @@ A flutter plugin to bridge RxJava &amp; RxSwift to Dart streams.
   s.source_files = 'Classes/**/*'
   s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
-  s.dependency 'RxSwift', '~> 4.3'
+  s.dependency 'RxSwift', '~> 5.0'
 
   s.ios.deployment_target = '8.0'
 end
